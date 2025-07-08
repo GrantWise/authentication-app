@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+*.dll
+*.pdb
+*.exe
+*.runtimeconfig.json
+*.deps.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
