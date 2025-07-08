@@ -13,6 +13,7 @@ using Serilog;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -138,8 +139,29 @@ builder.Services.AddRateLimiter(rateLimiterOptions =>
 
 // Add services
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+// Conditionally register KeyManagementService based on UseDataProtectionForKeys setting
+if (jwtSettings?.UseDataProtectionForKeys == true)
+{
+    builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
+    builder.Services.AddScoped<IJwtTokenService>(provider =>
+    {
+        var settings = provider.GetRequiredService<IOptions<JwtSettings>>();
+        var logger = provider.GetRequiredService<ILogger<JwtTokenService>>();
+        var keyManagement = provider.GetRequiredService<IKeyManagementService>();
+        return new JwtTokenService(settings, logger, keyManagement);
+    });
+}
+else
+{
+    // Development mode: use embedded keys from configuration, no KeyManagementService
+    builder.Services.AddScoped<IJwtTokenService>(provider =>
+    {
+        var settings = provider.GetRequiredService<IOptions<JwtSettings>>();
+        var logger = provider.GetRequiredService<ILogger<JwtTokenService>>();
+        return new JwtTokenService(settings, logger, null);
+    });
+}
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<IAuditService>(provider =>

@@ -152,7 +152,16 @@ public class JwtTokenService : IJwtTokenService
             {
                 // Create a new RSA instance with just the public key for validation
                 rsa = RSA.Create();
-                rsa.ImportFromPem(_developmentRsa.ExportRSAPublicKeyPem());
+                if (!string.IsNullOrEmpty(_jwtSettings.DevelopmentPublicKey))
+                {
+                    // Use the public key from configuration
+                    rsa.ImportFromPem(_jwtSettings.DevelopmentPublicKey);
+                }
+                else
+                {
+                    // Fall back to exporting public key from private key
+                    rsa.ImportFromPem(_developmentRsa.ExportRSAPublicKeyPem());
+                }
             }
             
             if (rsa == null)

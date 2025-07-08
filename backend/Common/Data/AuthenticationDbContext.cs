@@ -22,17 +22,17 @@ public class AuthenticationDbContext : DbContext
         {
             entity.HasKey(e => e.UserId);
             entity.HasIndex(e => e.Username).IsUnique();
-            entity.Property(e => e.UserId).HasDefaultValueSql("NEWID()");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UserId).HasDefaultValueSql("LOWER(HEX(RANDOMBLOB(16)))");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
         
         // ActiveSession entity configuration
         modelBuilder.Entity<ActiveSession>(entity =>
         {
             entity.HasKey(e => e.SessionId);
-            entity.Property(e => e.SessionId).HasDefaultValueSql("NEWID()");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.SessionId).HasDefaultValueSql("LOWER(HEX(RANDOMBLOB(16)))");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(e => e.User)
                   .WithMany(u => u.ActiveSessions)
@@ -45,7 +45,7 @@ public class AuthenticationDbContext : DbContext
         {
             entity.HasKey(e => e.LogId);
             entity.Property(e => e.LogId).ValueGeneratedOnAdd();
-            entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
             
             entity.HasOne(e => e.User)
                   .WithMany(u => u.AuditLogs)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AuthenticationApi.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreateSQLite : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +15,7 @@ namespace AuthenticationApi.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false, defaultValueSql: "NEWID()"),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false, defaultValueSql: "LOWER(HEX(RANDOMBLOB(16)))"),
                     Username = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     Email = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     PasswordHash = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
@@ -27,8 +27,10 @@ namespace AuthenticationApi.Migrations
                     LockoutEnd = table.Column<DateTime>(type: "TEXT", nullable: true),
                     FailedLoginAttempts = table.Column<int>(type: "INTEGER", nullable: false),
                     LastLoginAttempt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "GETUTCDATE()")
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    PasswordResetToken = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
+                    PasswordResetTokenExpiry = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -39,12 +41,12 @@ namespace AuthenticationApi.Migrations
                 name: "ActiveSessions",
                 columns: table => new
                 {
-                    SessionId = table.Column<Guid>(type: "TEXT", nullable: false, defaultValueSql: "NEWID()"),
+                    SessionId = table.Column<Guid>(type: "TEXT", nullable: false, defaultValueSql: "LOWER(HEX(RANDOMBLOB(16)))"),
                     UserId = table.Column<Guid>(type: "TEXT", nullable: false),
                     RefreshTokenJti = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     DeviceInfo = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
                     IpAddress = table.Column<string>(type: "TEXT", maxLength: 45, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     ExpiresAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -69,7 +71,7 @@ namespace AuthenticationApi.Migrations
                     EventType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     IpAddress = table.Column<string>(type: "TEXT", maxLength: 45, nullable: true),
                     UserAgent = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     Details = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>

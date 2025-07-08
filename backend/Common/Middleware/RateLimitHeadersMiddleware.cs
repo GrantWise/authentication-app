@@ -37,26 +37,26 @@ public class RateLimitHeadersMiddleware
 
             if (rateLimitPolicy != null)
             {
-                // Add standard rate limit headers
-                context.Response.Headers.Add("X-RateLimit-Policy", rateLimitPolicy.PolicyName);
-                context.Response.Headers.Add("X-RateLimit-Limit", rateLimitPolicy.Limit.ToString());
+                // Add standard rate limit headers (safely)
+                context.Response.Headers.TryAdd("X-RateLimit-Policy", rateLimitPolicy.PolicyName);
+                context.Response.Headers.TryAdd("X-RateLimit-Limit", rateLimitPolicy.Limit.ToString());
                 
                 if (rateLimitPolicy.Window.HasValue)
                 {
                     var resetTime = DateTimeOffset.UtcNow.Add(rateLimitPolicy.Window.Value);
-                    context.Response.Headers.Add("X-RateLimit-Reset", resetTime.ToUnixTimeSeconds().ToString());
-                    context.Response.Headers.Add("X-RateLimit-Window", ((int)rateLimitPolicy.Window.Value.TotalSeconds).ToString());
+                    context.Response.Headers.TryAdd("X-RateLimit-Reset", resetTime.ToUnixTimeSeconds().ToString());
+                    context.Response.Headers.TryAdd("X-RateLimit-Window", ((int)rateLimitPolicy.Window.Value.TotalSeconds).ToString());
                 }
 
                 // Add remaining attempts (this is estimated based on policy)
                 var remaining = EstimateRemainingAttempts(context, rateLimitPolicy);
-                context.Response.Headers.Add("X-RateLimit-Remaining", remaining.ToString());
+                context.Response.Headers.TryAdd("X-RateLimit-Remaining", remaining.ToString());
             }
 
-            // Always add correlation ID header if available
+            // Always add correlation ID header if available (safely)
             if (context.Items.TryGetValue("CorrelationId", out var correlationId))
             {
-                context.Response.Headers.Add("X-Correlation-Id", correlationId?.ToString());
+                context.Response.Headers.TryAdd("X-Correlation-Id", correlationId?.ToString());
             }
         }
         catch (Exception ex)
