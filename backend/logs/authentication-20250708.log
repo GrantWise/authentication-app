@@ -1,0 +1,6 @@
+2025-07-08 16:37:03.101 +02:00 [INF] Session cleanup service configured: Enabled=true, Interval="00:30:00", BatchSize=100
+2025-07-08 16:37:03.188 +02:00 [INF] Session cleanup service starting up
+2025-07-08 16:37:03.190 +02:00 [INF] Session cleanup service started
+2025-07-08 16:37:03.285 +02:00 [INF] Session cleanup completed successfully in 93.7013ms
+2025-07-08 16:41:02.409 +02:00 [WRN] Failed to determine the https port for redirect.
+2025-07-08 17:07:03.297 +02:00 [INF] Session cleanup completed successfully in 4.7348ms

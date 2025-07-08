@@ -1,0 +1,861 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AuthenticationApi</name>
+    </assembly>
+    <members>
+        <member name="T:AuthenticationApi.Common.Data.SeedData">
+            <summary>
+            Provides seed data for development and testing environments.
+            Creates default users and test data to facilitate development and testing.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Data.SeedData.SeedDevelopmentDataAsync(AuthenticationApi.Common.Data.AuthenticationDbContext,AuthenticationApi.Common.Interfaces.IUserService,Microsoft.AspNetCore.Hosting.IWebHostEnvironment)">
+            <summary>
+            Seeds the database with development data if running in development environment.
+            </summary>
+            <param name="context">The database context</param>
+            <param name="userService">User service for password hashing</param>
+            <param name="environment">The hosting environment</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Exceptions.AccountLockedException">
+            <summary>
+            Exception thrown when a user account is locked due to security policies.
+            Used specifically for authentication scenarios involving locked accounts.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Exceptions.AccountLockedException.LockoutEnd">
+            <summary>
+            Gets the time when the account lockout will expire.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Exceptions.AccountLockedException.RemainingLockoutDuration">
+            <summary>
+            Gets the remaining duration of the lockout.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.AccountLockedException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the AccountLockedException class.
+            </summary>
+            <param name="message">User-friendly error message describing the account lockout</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.AccountLockedException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the AccountLockedException class.
+            </summary>
+            <param name="message">User-friendly error message describing the account lockout</param>
+            <param name="innerException">The exception that caused this exception</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.AccountLockedException.#ctor(System.DateTime)">
+            <summary>
+            Initializes a new instance of the AccountLockedException class with lockout expiration details.
+            </summary>
+            <param name="lockoutEnd">The time when the account lockout will expire</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.AccountLockedException.#ctor(System.TimeSpan)">
+            <summary>
+            Initializes a new instance of the AccountLockedException class with lockout duration.
+            </summary>
+            <param name="lockoutDuration">The duration for which the account is locked</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.AccountLockedException.#ctor(System.String,System.DateTime)">
+            <summary>
+            Initializes a new instance of the AccountLockedException class with custom message and lockout details.
+            </summary>
+            <param name="message">User-friendly error message describing the account lockout</param>
+            <param name="lockoutEnd">The time when the account lockout will expire</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Exceptions.BusinessRuleException">
+            <summary>
+            Exception thrown when a business rule is violated.
+            Used for scenarios like business logic constraints, domain rule violations, etc.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Exceptions.BusinessRuleException.RuleCode">
+            <summary>
+            Gets the business rule code that was violated.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.BusinessRuleException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the BusinessRuleException class.
+            </summary>
+            <param name="message">User-friendly error message describing the business rule violation</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.BusinessRuleException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the BusinessRuleException class.
+            </summary>
+            <param name="message">User-friendly error message describing the business rule violation</param>
+            <param name="innerException">The exception that caused this exception</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.BusinessRuleException.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the BusinessRuleException class with a specific rule code.
+            </summary>
+            <param name="ruleCode">The code identifying the specific business rule that was violated</param>
+            <param name="message">User-friendly error message describing the business rule violation</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.BusinessRuleException.#ctor(System.String,System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the BusinessRuleException class with a specific rule code.
+            </summary>
+            <param name="ruleCode">The code identifying the specific business rule that was violated</param>
+            <param name="message">User-friendly error message describing the business rule violation</param>
+            <param name="innerException">The exception that caused this exception</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Exceptions.NotFoundException">
+            <summary>
+            Exception thrown when a requested resource cannot be found.
+            Used for scenarios like user not found, session not found, etc.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.NotFoundException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the NotFoundException class.
+            </summary>
+            <param name="message">User-friendly error message describing what was not found</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.NotFoundException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the NotFoundException class.
+            </summary>
+            <param name="message">User-friendly error message describing what was not found</param>
+            <param name="innerException">The exception that caused this exception</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.NotFoundException.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the NotFoundException class for a specific resource type and identifier.
+            </summary>
+            <param name="resourceType">The type of resource that was not found (e.g., "User", "Session")</param>
+            <param name="identifier">The identifier that was used to search for the resource</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Exceptions.ValidationException">
+            <summary>
+            Exception thrown when business rule validation fails.
+            Used for scenarios like invalid input data, business constraint violations, etc.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Exceptions.ValidationException.Errors">
+            <summary>
+            Gets the validation errors that occurred.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.ValidationException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the ValidationException class.
+            </summary>
+            <param name="message">User-friendly error message describing the validation failure</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.ValidationException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the ValidationException class.
+            </summary>
+            <param name="message">User-friendly error message describing the validation failure</param>
+            <param name="innerException">The exception that caused this exception</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.ValidationException.#ctor(System.Collections.Generic.IDictionary{System.String,System.String[]})">
+            <summary>
+            Initializes a new instance of the ValidationException class with detailed validation errors.
+            </summary>
+            <param name="errors">Dictionary of field names and their associated error messages</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Exceptions.ValidationException.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the ValidationException class for a single field validation error.
+            </summary>
+            <param name="field">The field name that failed validation</param>
+            <param name="error">The validation error message</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Middleware.CorrelationIdMiddleware">
+            <summary>
+            Middleware that generates and manages correlation IDs for request tracking and audit trails.
+            Enables full request tracing across all system components for debugging and compliance.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.CorrelationIdMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)">
+            <summary>
+            Initializes a new instance of the CorrelationIdMiddleware class.
+            </summary>
+            <param name="next">The next middleware in the pipeline</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.CorrelationIdMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            Processes the HTTP request and establishes correlation ID context.
+            </summary>
+            <param name="context">The HTTP context for the current request</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.CorrelationIdMiddleware.GetOrGenerateCorrelationId(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            Gets the correlation ID from request headers or generates a new one.
+            </summary>
+            <param name="context">The HTTP context</param>
+            <returns>The correlation ID for this request</returns>
+        </member>
+        <member name="T:AuthenticationApi.Common.Middleware.CorrelationIdMiddlewareExtensions">
+            <summary>
+            Extension methods for adding CorrelationIdMiddleware to the application pipeline.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.CorrelationIdMiddlewareExtensions.UseCorrelationId(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+            Adds the CorrelationIdMiddleware to the application's request pipeline.
+            </summary>
+            <param name="builder">The application builder</param>
+            <returns>The application builder for method chaining</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.CorrelationIdMiddlewareExtensions.GetCorrelationId(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            Gets the correlation ID for the current request from HttpContext.
+            </summary>
+            <param name="context">The HTTP context</param>
+            <returns>The correlation ID, or null if not available</returns>
+        </member>
+        <member name="T:AuthenticationApi.Common.Middleware.SecurityHeadersMiddleware">
+            <summary>
+            Middleware that adds security headers to all HTTP responses for ISO 27001 compliance.
+            Implements headers required by the technical specification including HSTS, CSP, X-Frame-Options, etc.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.SecurityHeadersMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)">
+            <summary>
+            Initializes a new instance of the SecurityHeadersMiddleware class.
+            </summary>
+            <param name="next">The next middleware in the pipeline</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.SecurityHeadersMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            Processes the HTTP request and adds security headers to the response.
+            </summary>
+            <param name="context">The HTTP context for the current request</param>
+        </member>
+        <member name="T:AuthenticationApi.Common.Middleware.SecurityHeadersMiddlewareExtensions">
+            <summary>
+            Extension methods for adding SecurityHeadersMiddleware to the application pipeline.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Middleware.SecurityHeadersMiddlewareExtensions.UseSecurityHeaders(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+            Adds the SecurityHeadersMiddleware to the application's request pipeline.
+            </summary>
+            <param name="builder">The application builder</param>
+            <returns>The application builder for method chaining</returns>
+        </member>
+        <member name="T:AuthenticationApi.Common.Services.IRateLimitingService">
+            <summary>
+            Service for implementing rate limiting functionality for authentication endpoints.
+            Tracks login attempts per username and IP address to prevent brute force attacks.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.IRateLimitingService.IsLoginAttemptAllowedAsync(System.String,System.String)">
+            <summary>
+            Checks if a login attempt should be allowed for the given username.
+            </summary>
+            <param name="username">The username attempting to login</param>
+            <param name="ipAddress">The IP address of the login attempt</param>
+            <returns>True if the attempt should be allowed, false if rate limited</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.IRateLimitingService.RecordLoginAttemptAsync(System.String,System.String,System.Boolean)">
+            <summary>
+            Records a login attempt for rate limiting tracking.
+            </summary>
+            <param name="username">The username that attempted to login</param>
+            <param name="ipAddress">The IP address of the login attempt</param>
+            <param name="successful">Whether the login attempt was successful</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.IRateLimitingService.GetRemainingAttemptsAsync(System.String)">
+            <summary>
+            Gets the remaining attempts before rate limiting kicks in.
+            </summary>
+            <param name="username">The username to check</param>
+            <returns>The number of remaining attempts</returns>
+        </member>
+        <member name="T:AuthenticationApi.Common.Services.RateLimitingService">
+            <summary>
+            Implementation of rate limiting service using in-memory caching.
+            Configured for 5 attempts per username per 15 minutes as per technical specification.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.RateLimitingService.#ctor(Microsoft.Extensions.Caching.Memory.IMemoryCache,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the RateLimitingService class.
+            </summary>
+            <param name="cache">Memory cache for storing rate limiting data</param>
+            <param name="configuration">Application configuration</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.RateLimitingService.IsLoginAttemptAllowedAsync(System.String,System.String)">
+            <summary>
+            Checks if a login attempt should be allowed for the given username.
+            </summary>
+            <param name="username">The username attempting to login</param>
+            <param name="ipAddress">The IP address of the login attempt</param>
+            <returns>True if the attempt should be allowed, false if rate limited</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.RateLimitingService.RecordLoginAttemptAsync(System.String,System.String,System.Boolean)">
+            <summary>
+            Records a login attempt for rate limiting tracking.
+            </summary>
+            <param name="username">The username that attempted to login</param>
+            <param name="ipAddress">The IP address of the login attempt</param>
+            <param name="successful">Whether the login attempt was successful</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.RateLimitingService.GetRemainingAttemptsAsync(System.String)">
+            <summary>
+            Gets the remaining attempts before rate limiting kicks in.
+            </summary>
+            <param name="username">The username to check</param>
+            <returns>The number of remaining attempts</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.RateLimitingService.GetRateLimitKey(System.String)">
+            <summary>
+            Generates a cache key for rate limiting based on username.
+            </summary>
+            <param name="username">The username</param>
+            <returns>The cache key</returns>
+        </member>
+        <member name="T:AuthenticationApi.Common.Services.RateLimitData">
+            <summary>
+            Data structure for tracking rate limiting information.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Services.RateLimitData.Attempts">
+            <summary>
+            Gets or sets the list of login attempts within the rate limiting window.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Common.Services.LoginAttempt">
+            <summary>
+            Represents a single login attempt for rate limiting tracking.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Services.LoginAttempt.Timestamp">
+            <summary>
+            Gets or sets the timestamp of the login attempt.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Services.LoginAttempt.IpAddress">
+            <summary>
+            Gets or sets the IP address of the login attempt.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Common.Services.LoginAttempt.Successful">
+            <summary>
+            Gets or sets whether the login attempt was successful.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Common.Services.SessionCleanupService">
+            <summary>
+            Background service that periodically cleans up expired authentication sessions.
+            Configurable service that removes expired session records to maintain database performance.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.SessionCleanupService.#ctor(System.IServiceProvider,Microsoft.Extensions.Logging.ILogger{AuthenticationApi.Common.Services.SessionCleanupService},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Initializes a new instance of the SessionCleanupService class.
+            </summary>
+            <param name="serviceProvider">Service provider for creating scoped services</param>
+            <param name="logger">Logger for service operations</param>
+            <param name="configuration">Application configuration</param>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.SessionCleanupService.ExecuteAsync(System.Threading.CancellationToken)">
+            <summary>
+            Executes the background session cleanup task.
+            </summary>
+            <param name="stoppingToken">Cancellation token for stopping the service</param>
+            <returns>A task representing the asynchronous operation</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.SessionCleanupService.PerformCleanupAsync(System.Threading.CancellationToken)">
+            <summary>
+            Performs the actual cleanup of expired sessions.
+            </summary>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>A task representing the asynchronous operation</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.SessionCleanupService.StartAsync(System.Threading.CancellationToken)">
+            <summary>
+            Handles service startup.
+            </summary>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>A task representing the asynchronous operation</returns>
+        </member>
+        <member name="M:AuthenticationApi.Common.Services.SessionCleanupService.StopAsync(System.Threading.CancellationToken)">
+            <summary>
+            Handles service shutdown.
+            </summary>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>A task representing the asynchronous operation</returns>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Login.LoginController.Login(AuthenticationApi.Features.Authentication.Login.LoginRequest)">
+            <summary>
+            Authenticates a user with username and password credentials.
+            Implements rate limiting (5 attempts per 15 minutes) and account lockout policies.
+            </summary>
+            <param name="request">Login credentials and device information</param>
+            <returns>JWT tokens and user information</returns>
+            <response code="200">Login successful - returns access and refresh tokens</response>
+            <response code="400">Invalid credentials or validation errors</response>
+            <response code="423">Account locked due to failed attempts</response>
+            <response code="429">Rate limit exceeded - too many attempts</response>
+            <response code="500">Internal server error</response>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Login.LoginRequest">
+            <summary>
+            Request model for user authentication with username and password.
+            Supports both desktop and mobile device authentication scenarios.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginRequest.Username">
+            <summary>
+            Gets or sets the username for authentication.
+            Must be a valid username registered in the system.
+            </summary>
+            <example>john.doe</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginRequest.Password">
+            <summary>
+            Gets or sets the password for authentication.
+            Must meet the configured password complexity requirements.
+            </summary>
+            <example>SecurePassword123!</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginRequest.DeviceInfo">
+            <summary>
+            Gets or sets the device information for session tracking.
+            Automatically populated from User-Agent header if not provided.
+            </summary>
+            <example>Mozilla/5.0 (Windows NT 10.0; Win64; x64)</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginRequest.IpAddress">
+            <summary>
+            Gets or sets the IP address of the login request.
+            Automatically populated from the request if not provided.
+            </summary>
+            <example>192.168.1.100</example>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Login.LoginResponse">
+            <summary>
+            Response model for successful authentication containing JWT tokens and user information.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.AccessToken">
+            <summary>
+            Gets or sets the access token for API authentication.
+            Valid for 15 minutes and contains user claims.
+            </summary>
+            <example>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.RefreshToken">
+            <summary>
+            Gets or sets the refresh token for obtaining new access tokens.
+            Valid for 60 minutes and used for token rotation.
+            </summary>
+            <example>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.AccessTokenExpiry">
+            <summary>
+            Gets or sets when the access token expires (UTC).
+            </summary>
+            <example>2024-01-01T12:15:00Z</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.RefreshTokenExpiry">
+            <summary>
+            Gets or sets when the refresh token expires (UTC).
+            </summary>
+            <example>2024-01-01T13:00:00Z</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.RequiresMfa">
+            <summary>
+            Gets or sets whether Multi-Factor Authentication is required.
+            If true, tokens will not be provided and MFA challenge must be completed.
+            </summary>
+            <example>false</example>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Login.LoginResponse.MfaChallenge">
+            <summary>
+            Gets or sets the MFA challenge message if MFA is required.
+            Provides instructions for completing the MFA process.
+            </summary>
+            <example>Please enter your authentication code</example>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Logout.LogoutController">
+            <summary>
+            Controller for handling user logout operations.
+            Provides endpoint for terminating the current user session.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Logout.LogoutController.#ctor(MediatR.IMediator)">
+            <summary>
+            Initializes a new instance of the LogoutController class.
+            </summary>
+            <param name="mediator">MediatR mediator for handling requests</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Logout.LogoutController.Logout(AuthenticationApi.Features.Authentication.Logout.LogoutRequest)">
+            <summary>
+            Logs out the current user session by revoking the refresh token.
+            This terminates only the current session, leaving other device sessions active.
+            </summary>
+            <param name="request">The logout request containing the refresh token</param>
+            <returns>Logout operation result</returns>
+            <response code="200">Logout successful</response>
+            <response code="400">Invalid request or validation errors</response>
+            <response code="401">Unauthorized - invalid or missing access token</response>
+            <response code="500">Internal server error</response>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Logout.LogoutHandler">
+            <summary>
+            Handles logout requests to terminate user sessions.
+            Revokes the current session while maintaining other active sessions on different devices.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Logout.LogoutHandler.#ctor(AuthenticationApi.Common.Interfaces.IJwtTokenService,AuthenticationApi.Common.Interfaces.ISessionService,AuthenticationApi.Common.Interfaces.IAuditService)">
+            <summary>
+            Initializes a new instance of the LogoutHandler class.
+            </summary>
+            <param name="jwtTokenService">Service for JWT token operations</param>
+            <param name="sessionService">Service for session management</param>
+            <param name="auditService">Service for audit logging</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Logout.LogoutHandler.Handle(AuthenticationApi.Features.Authentication.Logout.LogoutRequest,System.Threading.CancellationToken)">
+            <summary>
+            Handles the logout request and terminates the specified session.
+            </summary>
+            <param name="request">The logout request containing the refresh token</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Logout operation result</returns>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Logout.LogoutRequest">
+            <summary>
+            Request to logout from the current session by revoking the refresh token.
+            Invalidates the current session while leaving other device sessions active.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Logout.LogoutRequest.RefreshToken">
+            <summary>
+            Gets or sets the refresh token for the session to be terminated.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Logout.LogoutRequest.IpAddress">
+            <summary>
+            Gets or sets the IP address of the logout request for audit purposes.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Logout.LogoutResponse">
+            <summary>
+            Response indicating the logout operation result.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Logout.LogoutResponse.Success">
+            <summary>
+            Gets or sets a value indicating whether the logout was successful.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Logout.LogoutResponse.Message">
+            <summary>
+            Gets or sets a message describing the logout result.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Logout.LogoutRequestValidator">
+            <summary>
+            Validator for logout requests to ensure required fields are provided.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Logout.LogoutRequestValidator.#ctor">
+            <summary>
+            Initializes a new instance of the LogoutRequestValidator class.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllController">
+            <summary>
+            Controller for handling logout all operations.
+            Provides endpoint for terminating all user sessions across all devices.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllController.#ctor(MediatR.IMediator)">
+            <summary>
+            Initializes a new instance of the LogoutAllController class.
+            </summary>
+            <param name="mediator">MediatR mediator for handling requests</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllController.LogoutAll">
+            <summary>
+            Logs out all active sessions for the current user across all devices.
+            This terminates all sessions and requires the user to log in again on all devices.
+            </summary>
+            <returns>Logout all operation result</returns>
+            <response code="200">Logout all successful</response>
+            <response code="401">Unauthorized - invalid or missing access token</response>
+            <response code="404">User not found</response>
+            <response code="500">Internal server error</response>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllHandler">
+            <summary>
+            Handles logout all requests to terminate all user sessions across all devices.
+            Provides a security feature for users to revoke all active sessions when needed.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllHandler.#ctor(AuthenticationApi.Common.Interfaces.ISessionService,AuthenticationApi.Common.Interfaces.IUserService,AuthenticationApi.Common.Interfaces.IAuditService)">
+            <summary>
+            Initializes a new instance of the LogoutAllHandler class.
+            </summary>
+            <param name="sessionService">Service for session management</param>
+            <param name="userService">Service for user operations</param>
+            <param name="auditService">Service for audit logging</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllHandler.Handle(AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllRequest,System.Threading.CancellationToken)">
+            <summary>
+            Handles the logout all request and terminates all sessions for the user.
+            </summary>
+            <param name="request">The logout all request</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Logout all operation result</returns>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllRequest">
+            <summary>
+            Request to logout from all active sessions across all devices.
+            Revokes all refresh tokens associated with the user account.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllRequest.UserId">
+            <summary>
+            Gets or sets the user ID whose sessions should be terminated.
+            This is typically extracted from the JWT token claims.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllRequest.IpAddress">
+            <summary>
+            Gets or sets the IP address of the logout request for audit purposes.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllResponse">
+            <summary>
+            Response indicating the logout all operation result.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllResponse.Success">
+            <summary>
+            Gets or sets a value indicating whether the logout operation was successful.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllResponse.Message">
+            <summary>
+            Gets or sets a message describing the logout result.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.LogoutAll.LogoutAllResponse.SessionsTerminated">
+            <summary>
+            Gets or sets the number of sessions that were terminated.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Refresh.RefreshController">
+            <summary>
+            Controller for handling token refresh operations.
+            Provides endpoint for refreshing expired access tokens using valid refresh tokens.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Refresh.RefreshController.#ctor(MediatR.IMediator)">
+            <summary>
+            Initializes a new instance of the RefreshController class.
+            </summary>
+            <param name="mediator">MediatR mediator for handling requests</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Refresh.RefreshController.RefreshToken(AuthenticationApi.Features.Authentication.Refresh.RefreshRequest)">
+            <summary>
+            Refreshes an access token using a valid refresh token.
+            Implements token rotation where the refresh token is also replaced for enhanced security.
+            </summary>
+            <param name="request">The refresh token request</param>
+            <returns>New access and refresh tokens</returns>
+            <response code="200">Token refresh successful</response>
+            <response code="400">Invalid refresh token or validation errors</response>
+            <response code="404">Session not found</response>
+            <response code="423">User account is locked</response>
+            <response code="500">Internal server error</response>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Refresh.RefreshHandler">
+            <summary>
+            Handles refresh token requests to generate new access tokens.
+            Implements token rotation strategy where refresh tokens are rotated on each use for enhanced security.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Refresh.RefreshHandler.#ctor(AuthenticationApi.Common.Interfaces.IJwtTokenService,AuthenticationApi.Common.Interfaces.ISessionService,AuthenticationApi.Common.Interfaces.IUserService,AuthenticationApi.Common.Interfaces.IAuditService)">
+            <summary>
+            Initializes a new instance of the RefreshHandler class.
+            </summary>
+            <param name="jwtTokenService">Service for JWT token operations</param>
+            <param name="sessionService">Service for session management</param>
+            <param name="userService">Service for user operations</param>
+            <param name="auditService">Service for audit logging</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Refresh.RefreshHandler.Handle(AuthenticationApi.Features.Authentication.Refresh.RefreshRequest,System.Threading.CancellationToken)">
+            <summary>
+            Handles the refresh token request and generates new tokens.
+            </summary>
+            <param name="request">The refresh request containing the refresh token</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>New access and refresh tokens</returns>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Refresh.RefreshRequest">
+            <summary>
+            Request to refresh an expired access token using a valid refresh token.
+            Part of the JWT token rotation strategy for maintaining user sessions.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshRequest.RefreshToken">
+            <summary>
+            Gets or sets the refresh token to be used for generating a new access token.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshRequest.DeviceInfo">
+            <summary>
+            Gets or sets the device information for session tracking.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshRequest.IpAddress">
+            <summary>
+            Gets or sets the IP address of the refresh request for audit purposes.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Refresh.RefreshResponse">
+            <summary>
+            Response containing the new access token and updated refresh token.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshResponse.AccessToken">
+            <summary>
+            Gets or sets the new access token with extended expiration.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshResponse.RefreshToken">
+            <summary>
+            Gets or sets the new refresh token (token rotation for security).
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshResponse.AccessTokenExpiry">
+            <summary>
+            Gets or sets when the new access token expires.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Refresh.RefreshResponse.RefreshTokenExpiry">
+            <summary>
+            Gets or sets when the new refresh token expires.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Refresh.RefreshRequestValidator">
+            <summary>
+            Validator for refresh token requests to ensure required fields are provided.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Refresh.RefreshRequestValidator.#ctor">
+            <summary>
+            Initializes a new instance of the RefreshRequestValidator class.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Verify.VerifyController">
+            <summary>
+            Controller for handling token verification operations.
+            Provides endpoint for validating access tokens and retrieving user information.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Verify.VerifyController.#ctor(MediatR.IMediator)">
+            <summary>
+            Initializes a new instance of the VerifyController class.
+            </summary>
+            <param name="mediator">MediatR mediator for handling requests</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Verify.VerifyController.VerifyToken">
+            <summary>
+            Verifies the validity of an access token and returns user information.
+            This endpoint can be used by client applications to validate tokens and get user details.
+            </summary>
+            <returns>Token verification result with user information</returns>
+            <response code="200">Token verification completed (check IsValid property for result)</response>
+            <response code="500">Internal server error</response>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Verify.VerifyHandler">
+            <summary>
+            Handles token verification requests to validate access tokens.
+            Provides token introspection capabilities for client applications.
+            </summary>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Verify.VerifyHandler.#ctor(AuthenticationApi.Common.Interfaces.IJwtTokenService,AuthenticationApi.Common.Interfaces.IUserService)">
+            <summary>
+            Initializes a new instance of the VerifyHandler class.
+            </summary>
+            <param name="jwtTokenService">Service for JWT token operations</param>
+            <param name="userService">Service for user operations</param>
+        </member>
+        <member name="M:AuthenticationApi.Features.Authentication.Verify.VerifyHandler.Handle(AuthenticationApi.Features.Authentication.Verify.VerifyRequest,System.Threading.CancellationToken)">
+            <summary>
+            Handles the token verification request.
+            </summary>
+            <param name="request">The verification request containing the access token</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Token verification result with user information</returns>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Verify.VerifyRequest">
+            <summary>
+            Request to verify the validity of an access token.
+            Used by client applications to check if the current token is still valid.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyRequest.AccessToken">
+            <summary>
+            Gets or sets the access token to be verified.
+            This is typically extracted from the Authorization header.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Features.Authentication.Verify.VerifyResponse">
+            <summary>
+            Response containing token verification results and user information.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.IsValid">
+            <summary>
+            Gets or sets a value indicating whether the token is valid.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.UserId">
+            <summary>
+            Gets or sets the user ID associated with the token.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.Username">
+            <summary>
+            Gets or sets the username associated with the token.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.Roles">
+            <summary>
+            Gets or sets the user roles associated with the token.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.ExpiresAt">
+            <summary>
+            Gets or sets when the token expires.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.IssuedAt">
+            <summary>
+            Gets or sets when the token was issued.
+            </summary>
+        </member>
+        <member name="P:AuthenticationApi.Features.Authentication.Verify.VerifyResponse.ErrorMessage">
+            <summary>
+            Gets or sets an error message if the token is invalid.
+            </summary>
+        </member>
+        <member name="T:AuthenticationApi.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:AuthenticationApi.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:AuthenticationApi.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:AuthenticationApi.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>
