@@ -1,70 +1,70 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { CheckCircle2, Eye, EyeOff, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { LoadingOverlay } from "@/components/ui/loading-spinner"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import { useLogin } from "@/lib/api/auth-queries"
+import { 
+  desktopLoginSchema, 
+  type DesktopLoginFormData 
+} from "@/lib/schemas/auth-schemas"
+import { authToasts, formToasts } from "@/lib/utils/toast"
 
 export default function DesktopAuth() {
   const router = useRouter()
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [loginAttempts, setLoginAttempts] = useState(0)
   const [success, setSuccess] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("http://localhost:5097/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Store the JWT token
-        localStorage.setItem("jwt_token", data.token)
-        localStorage.setItem("user_role", data.role)
-        localStorage.setItem("username", data.username)
-
+  
+  const { clearError } = useAuthStore()
+  const loginMutation = useLogin({
+    onSuccess: (data) => {
+      if (data.success && data.user) {
+        authToasts.loginSuccess(data.user.username)
         setSuccess(true)
         // Redirect to the app after a short delay
         setTimeout(() => {
           router.push("/dashboard")
         }, 1000)
-      } else {
-        setLoginAttempts((prev) => prev + 1)
-        if (loginAttempts >= 2) {
-          setError("Account locked for 30 minutes. Please contact your administrator.")
-        } else {
-          setError(data.message || "Incorrect username or password. Please try again.")
-        }
       }
-    } catch (error) {
-      setError("Unable to connect to server. Please check your network connection.")
-    } finally {
-      setIsLoading(false)
+    },
+    onError: (error) => {
+      authToasts.loginError((error as Error).message)
+      setLoginAttempts((prev) => prev + 1)
     }
+  })
+
+  // Form hook
+  const form = useForm<DesktopLoginFormData>({
+    resolver: zodResolver(desktopLoginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      rememberMe: false,
+    },
+    mode: 'onChange',
+  })
+
+  const onSubmit = (data: DesktopLoginFormData) => {
+    clearError()
+    
+    loginMutation.mutate({
+      username: data.username.trim(),
+      password: data.password,
+      deviceInfo: navigator.userAgent,
+      rememberMe: data.rememberMe,
+    })
   }
 
   return (
@@ -83,7 +83,7 @@ export default function DesktopAuth() {
         </CardHeader>
         <CardContent>
           {!success ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sm font-medium">
                   Username
@@ -91,14 +91,15 @@ export default function DesktopAuth() {
                 <Input
                   id="username"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Try: testuser, admin, or flowcreator"
+                  {...form.register("username")}
+                  placeholder="Enter your username"
                   className="h-11"
-                  required
                   aria-label="Username or email address, required"
-                  disabled={isLoading}
+                  disabled={loginMutation.isPending}
                 />
+                {form.formState.errors.username && (
+                  <p className="text-sm text-red-600">{form.formState.errors.username.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -111,13 +112,11 @@ export default function DesktopAuth() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Try: TestPassword123!, AdminPassword123!, or FlowPassword123!"
+                    {...form.register("password")}
+                    placeholder="Enter your password"
                     className="h-11 pr-10"
-                    required
                     aria-label="Password, required"
-                    disabled={isLoading}
+                    disabled={loginMutation.isPending}
                   />
                   <Button
                     type="button"
@@ -130,20 +129,37 @@ export default function DesktopAuth() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
+                {form.formState.errors.password && (
+                  <p className="text-sm text-red-600">{form.formState.errors.password.message}</p>
+                )}
               </div>
 
-              {error && <div className="text-[#dc2626] text-sm flex items-center gap-2">{error}</div>}
+              {loginMutation.error && (
+                <div className="text-[#dc2626] text-sm flex items-center gap-2">
+                  {(loginMutation.error as Error).message}
+                </div>
+              )}
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="remember" />
+                <Checkbox 
+                  id="remember" 
+                  checked={form.watch("rememberMe")}
+                  onCheckedChange={(checked) => form.setValue("rememberMe", !!checked)}
+                />
                 <Label htmlFor="remember" className="text-sm font-medium">
                   Remember me for 60 minutes
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full h-11" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
+              <LoadingButton 
+                type="submit" 
+                className="w-full h-11" 
+                loading={loginMutation.isPending}
+                loadingText="Signing in..."
+                disabled={!form.formState.isValid}
+              >
+                Sign In
+              </LoadingButton>
             </form>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">

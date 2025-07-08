@@ -1,22 +1,41 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, forwardRef } from "react"
 import { Button } from "@/components/ui/button"
 
 interface PinEntryProps {
   onComplete: (pin: string) => void
   error?: boolean
+  disabled?: boolean
+  value?: string
+  onChange?: (pin: string) => void
 }
 
-export function PinEntry({ onComplete, error = false }: PinEntryProps) {
-  const [pin, setPin] = useState<string>("")
+export function PinEntry({ 
+  onComplete, 
+  error = false, 
+  disabled = false, 
+  value, 
+  onChange 
+}: PinEntryProps) {
+  const [pin, setPin] = useState<string>(value || "")
   const pinLength = 4
+
+  // Update local state when value prop changes
+  useEffect(() => {
+    if (value !== undefined) {
+      setPin(value)
+    }
+  }, [value])
 
   // Handle pin entry
   const handlePinDigit = (digit: string) => {
+    if (disabled) return
+    
     if (pin.length < pinLength) {
       const newPin = pin + digit
       setPin(newPin)
+      onChange?.(newPin)
 
       if (newPin.length === pinLength) {
         onComplete(newPin)
@@ -26,14 +45,21 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
 
   // Handle delete
   const handleDelete = () => {
+    if (disabled) return
+    
     if (pin.length > 0) {
-      setPin(pin.slice(0, -1))
+      const newPin = pin.slice(0, -1)
+      setPin(newPin)
+      onChange?.(newPin)
     }
   }
 
   // Handle clear
   const handleClear = () => {
+    if (disabled) return
+    
     setPin("")
+    onChange?.("")
   }
 
   // Apply shake animation when error occurs
@@ -41,10 +67,11 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
     if (error) {
       const timer = setTimeout(() => {
         setPin("")
+        onChange?.("")
       }, 300)
       return () => clearTimeout(timer)
     }
-  }, [error])
+  }, [error, onChange])
 
   return (
     <div className="w-full">
@@ -76,6 +103,7 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
             variant="outline"
             className="h-[72px] w-full text-2xl font-medium bg-transparent"
             onClick={() => handlePinDigit(digit.toString())}
+            disabled={disabled}
           >
             {digit}
           </Button>
@@ -85,6 +113,7 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
           variant="outline"
           className="h-[72px] w-full text-sm font-medium bg-transparent"
           onClick={handleClear}
+          disabled={disabled}
         >
           Clear
         </Button>
@@ -93,6 +122,7 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
           variant="outline"
           className="h-[72px] w-full text-2xl font-medium bg-transparent"
           onClick={() => handlePinDigit("0")}
+          disabled={disabled}
         >
           0
         </Button>
@@ -101,6 +131,7 @@ export function PinEntry({ onComplete, error = false }: PinEntryProps) {
           variant="outline"
           className="h-[72px] w-full text-sm font-medium bg-transparent"
           onClick={handleDelete}
+          disabled={disabled}
         >
           Del
         </Button>

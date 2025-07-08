@@ -5,42 +5,50 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle2, Mail } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { forgotPasswordSchema } from "@/lib/schemas/auth-schemas"
+import { useForgotPassword } from "@/lib/api/auth-queries"
+import { handleApiError } from "@/lib/api/http-client"
+import type { ForgotPasswordFormData } from "@/lib/types/auth"
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [submittedEmail, setSubmittedEmail] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    clearErrors,
+  } = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    mode: 'onBlur',
+  })
 
-    try {
-      const response = await fetch("http://localhost:5097/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+  const forgotPasswordMutation = useForgotPassword({
+    onSuccess: (data, variables) => {
+      setSubmittedEmail(variables.email)
+      setSuccess(true)
+      clearErrors()
+    },
+    onError: (error) => {
+      const errorMessage = handleApiError(error)
+      setError('root', {
+        type: 'manual',
+        message: errorMessage,
       })
+    },
+  })
 
-      if (response.ok) {
-        setSuccess(true)
-      } else {
-        const data = await response.json()
-        setError(data.message || "Failed to send reset email. Please try again.")
-      }
-    } catch (error) {
-      setError("Unable to connect to server. Please check your network connection.")
-    } finally {
-      setIsLoading(false)
-    }
+  const onSubmit = (data: ForgotPasswordFormData) => {
+    forgotPasswordMutation.mutate(data)
   }
 
   return (
@@ -59,13 +67,13 @@ export default function ForgotPassword() {
             <>
               <CheckCircle2 className="h-16 w-16 text-[#22c55e] mx-auto mb-4" />
               <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
-              <CardDescription>We've sent a password reset link to {email}</CardDescription>
+              <CardDescription>We've sent a password reset link to {submittedEmail}</CardDescription>
             </>
           )}
         </CardHeader>
         <CardContent>
           {!success ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -73,20 +81,33 @@ export default function ForgotPassword() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register('email')}
                   placeholder="Enter your email address"
                   className="h-11"
-                  required
-                  disabled={isLoading}
+                  disabled={forgotPasswordMutation.isPending}
+                  aria-invalid={errors.email ? 'true' : 'false'}
                 />
+                {errors.email && (
+                  <p className="text-[#dc2626] text-sm">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
 
-              {error && <div className="text-[#dc2626] text-sm flex items-center gap-2">{error}</div>}
+              {errors.root && (
+                <div className="text-[#dc2626] text-sm flex items-center gap-2">
+                  {errors.root.message}
+                </div>
+              )}
 
-              <Button type="submit" className="w-full h-11" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Send Reset Link"}
-              </Button>
+              <LoadingButton 
+                type="submit" 
+                className="w-full h-11" 
+                loading={forgotPasswordMutation.isPending}
+                loadingText="Sending..."
+              >
+                Send Reset Link
+              </LoadingButton>
 
               <div className="text-center">
                 <Link

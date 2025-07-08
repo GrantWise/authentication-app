@@ -2,18 +2,66 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { LoadingOverlay, LoadingSpinner } from "@/components/ui/loading-spinner"
+import { CompactProgressSteps } from "@/components/ui/progress-steps"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { UserSelectionGrid } from "@/components/user-selection-grid"
 import { PinEntry } from "@/components/pin-entry"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import { usePinLogin } from "@/lib/api/auth-queries"
+import { 
+  mobilePinSchema, 
+  deviceSelectionSchema, 
+  userSelectionSchema,
+  type MobilePinFormData, 
+  type DeviceSelectionFormData, 
+  type UserSelectionFormData 
+} from "@/lib/schemas/auth-schemas"
+import { authToasts } from "@/lib/utils/toast"
 
 export default function MobileAuth() {
   const router = useRouter()
   const [step, setStep] = useState<"device" | "user" | "pin" | "success">("device")
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null)
   const [pinAttempts, setPinAttempts] = useState(0)
+  
+  const { clearError } = useAuthStore()
+  const pinLoginMutation = usePinLogin({
+    onSuccess: (data) => {
+      if (data.success && data.user) {
+        authToasts.loginSuccess(data.user.username)
+        setStep("success")
+        // Redirect to the app after a short delay
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 2000)
+      }
+    },
+    onError: (error) => {
+      authToasts.loginError((error as Error).message)
+      setPinAttempts((prev) => prev + 1)
+    }
+  })
+
+  // Form hooks for each step
+  const deviceForm = useForm<DeviceSelectionFormData>({
+    resolver: zodResolver(deviceSelectionSchema),
+  })
+
+  const userForm = useForm<UserSelectionFormData>({
+    resolver: zodResolver(userSelectionSchema),
+  })
+
+  const pinForm = useForm<MobilePinFormData>({
+    resolver: zodResolver(mobilePinSchema),
+    mode: 'onChange',
+  })
 
   const devices = [
     { id: "1", name: "Warehouse Scanner 1", location: "Main Warehouse" },
@@ -30,82 +78,61 @@ export default function MobileAuth() {
     { id: "6", name: "Lisa Patel", initials: "LP" },
   ]
 
+  const progressSteps = [
+    { id: "device", title: "Device", description: "Select Scanner" },
+    { id: "user", title: "User", description: "Select Profile" },
+    { id: "pin", title: "PIN", description: "Enter PIN" },
+    { id: "success", title: "Complete", description: "Sign In Success" },
+  ]
+
   const handleDeviceSelect = (deviceId: string) => {
-    // In a real app, this would set the selected device
-    setStep("user")
+    const device = devices.find((d) => d.id === deviceId)
+    if (device) {
+      setSelectedDevice(device.name)
+      deviceForm.setValue("deviceId", deviceId)
+      setStep("user")
+    }
   }
 
   const handleUserSelect = (userId: string) => {
     const user = users.find((u) => u.id === userId)
     if (user) {
       setSelectedUser(user.name)
+      userForm.setValue("userId", userId)
       setStep("pin")
     }
   }
 
   const handlePinSubmit = async (pin: string) => {
-    setError(null)
+    clearError()
 
-    // Map PINs to test users for demo purposes
-    const pinToUser: Record<string, { username: string; password: string }> = {
-      "1234": { username: "testuser", password: "TestPassword123!" },
-      "5678": { username: "admin", password: "AdminPassword123!" },
-      "9999": { username: "flowcreator", password: "FlowPassword123!" },
-    }
+    // Set form data for validation
+    pinForm.setValue("pin", pin)
+    pinForm.setValue("deviceId", selectedDevice || "unknown")
 
-    const userCredentials = pinToUser[pin]
-
-    if (!userCredentials) {
+    // Validate the form
+    const isValid = await pinForm.trigger()
+    if (!isValid) {
       setPinAttempts((prev) => prev + 1)
-      if (pinAttempts >= 2) {
-        setError("Account locked. See supervisor")
-      } else {
-        setError(`Incorrect PIN. ${2 - pinAttempts} attempts remaining`)
-      }
       return
     }
 
-    try {
-      const response = await fetch("http://localhost:5097/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: userCredentials.username,
-          password: userCredentials.password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Store the JWT token
-        localStorage.setItem("jwt_token", data.token)
-        localStorage.setItem("user_role", data.role)
-        localStorage.setItem("username", data.username)
-
-        setStep("success")
-        // Redirect to the app after a short delay
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 1000)
-      } else {
-        setPinAttempts((prev) => prev + 1)
-        if (pinAttempts >= 2) {
-          setError("Account locked. See supervisor")
-        } else {
-          setError(`Authentication failed. ${2 - pinAttempts} attempts remaining`)
-        }
-      }
-    } catch (error) {
-      setError("Connection lost. Try again")
-    }
+    const formData = pinForm.getValues()
+    pinLoginMutation.mutate({
+      deviceId: formData.deviceId,
+      pin: formData.pin,
+      deviceInfo: navigator.userAgent,
+    })
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-6 bg-white">
-      <Card className="w-full max-w-md border-0 shadow-none">
+      <LoadingOverlay 
+        isLoading={pinLoginMutation.isPending && step === "pin"}
+        loadingText="Verifying PIN..."
+        className="w-full max-w-md"
+      >
+        <Card className="w-full max-w-md border-0 shadow-none">
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-8">
             <div className="text-[#1e4e8c] font-bold text-3xl">TransLution</div>
@@ -121,11 +148,14 @@ export default function MobileAuth() {
           {step === "pin" && selectedUser && (
             <CardDescription>
               Signing in as {selectedUser}
-              <br />
-              <span className="text-xs text-muted-foreground">
-                Test PINs: 1234 (User), 5678 (Admin), 9999 (FlowCreator)
-              </span>
             </CardDescription>
+          )}
+          
+          {/* Progress Steps */}
+          {step !== "success" && (
+            <div className="mb-6 w-full px-4">
+              <CompactProgressSteps steps={progressSteps} currentStepId={step} />
+            </div>
           )}
         </CardHeader>
         <CardContent className="flex flex-col items-center">
@@ -161,17 +191,47 @@ export default function MobileAuth() {
 
           {step === "pin" && (
             <>
-              <PinEntry onComplete={handlePinSubmit} error={!!error} />
+              <PinEntry 
+                onComplete={handlePinSubmit} 
+                error={!!pinForm.formState.errors.pin || !!pinLoginMutation.error} 
+                disabled={pinLoginMutation.isPending}
+                value={pinForm.watch("pin")}
+                onChange={(pin) => pinForm.setValue("pin", pin)}
+              />
 
-              {error && <div className="mt-4 text-[#dc2626] text-sm flex items-center justify-center">{error}</div>}
+              {(pinForm.formState.errors.pin || pinLoginMutation.error) && (
+                <div className="mt-4 text-[#dc2626] text-sm flex items-center justify-center">
+                  {pinForm.formState.errors.pin?.message || 
+                   (pinLoginMutation.error as Error)?.message}
+                  {pinAttempts >= 3 && (
+                    <div className="ml-2 text-xs text-muted-foreground">
+                      Contact supervisor for help
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-8 w-full flex justify-between">
-                <Button variant="ghost" className="h-14 flex items-center gap-2" onClick={() => setStep("user")}>
+                <Button 
+                  variant="ghost" 
+                  className="h-14 flex items-center gap-2" 
+                  onClick={() => {
+                    setStep("user")
+                    clearError()
+                    setPinAttempts(0)
+                    pinForm.reset()
+                  }}
+                  disabled={pinLoginMutation.isPending}
+                >
                   <ArrowLeft className="h-5 w-5" />
                   <span>Back</span>
                 </Button>
 
-                <Button variant="outline" className="h-14 bg-transparent">
+                <Button 
+                  variant="outline" 
+                  className="h-14 bg-transparent" 
+                  disabled={pinLoginMutation.isPending}
+                >
                   Get Help
                 </Button>
               </div>
@@ -186,7 +246,8 @@ export default function MobileAuth() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </LoadingOverlay>
     </main>
   )
 }

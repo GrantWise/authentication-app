@@ -11,30 +11,38 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import { getTokenTimeRemaining } from "@/utils/auth"
 
 interface SessionWarningModalProps {
+  isOpen: boolean
   onClose: () => void
 }
 
-export function SessionWarningModal({ onClose }: SessionWarningModalProps) {
+export function SessionWarningModal({ isOpen, onClose }: SessionWarningModalProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(true)
+  const { accessToken, refresh, logout } = useAuthStore()
   const [countdown, setCountdown] = useState(300) // 5 minutes in seconds
 
   useEffect(() => {
-    if (open && countdown > 0) {
+    if (isOpen && accessToken) {
+      // Initialize countdown with actual token time remaining
+      const timeRemaining = getTokenTimeRemaining(accessToken)
+      setCountdown(timeRemaining > 0 ? timeRemaining : 300)
+    }
+  }, [isOpen, accessToken])
+
+  useEffect(() => {
+    if (isOpen && countdown > 0) {
       const timer = setTimeout(() => {
         setCountdown(countdown - 1)
       }, 1000)
       return () => clearTimeout(timer)
     } else if (countdown === 0) {
-      // Session expired, redirect to login
-      localStorage.removeItem("jwt_token")
-      localStorage.removeItem("username")
-      localStorage.removeItem("user_role")
-      router.push("/")
+      // Session expired, logout using store
+      handleSignOut()
     }
-  }, [countdown, open, router])
+  }, [countdown, isOpen])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -43,49 +51,29 @@ export function SessionWarningModal({ onClose }: SessionWarningModalProps) {
   }
 
   const handleContinue = async () => {
-    // In a real app, this would call the backend to extend the session
     try {
-      const token = localStorage.getItem("jwt_token")
-      const response = await fetch("http://localhost:5097/api/auth/refresh", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem("jwt_token", data.token)
-        setOpen(false)
-        onClose()
-      } else {
-        // If refresh fails, sign out
-        handleSignOut()
-      }
-    } catch (error) {
-      // If there's an error, just close the modal for now
-      setOpen(false)
+      await refresh()
       onClose()
+    } catch (error) {
+      // If refresh fails, sign out
+      handleSignOut()
     }
   }
 
-  const handleSignOut = () => {
-    localStorage.removeItem("jwt_token")
-    localStorage.removeItem("username")
-    localStorage.removeItem("user_role")
+  const handleSignOut = async () => {
+    await logout()
     router.push("/")
+    onClose()
   }
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen)
     if (!newOpen) {
       onClose()
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Session Expiring Soon</DialogTitle>
