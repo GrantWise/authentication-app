@@ -1,6 +1,7 @@
 using AuthenticationApi.Common.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AuthenticationApi.Features.Authentication.Login;
 
@@ -27,6 +28,7 @@ public class LoginController : ControllerBase
     /// <response code="429">Rate limit exceeded - too many attempts</response>
     /// <response code="500">Internal server error</response>
     [HttpPost("login")]
+    [EnableRateLimiting("LoginPolicy")]
     [ProducesResponseType(typeof(LoginResponse), 200)]
     [ProducesResponseType(typeof(object), 400)]
     [ProducesResponseType(typeof(object), 423)]

@@ -42,6 +42,11 @@ public class User
     
     public DateTime UpdatedAt { get; set; }
     
+    [MaxLength(255)]
+    public string? PasswordResetToken { get; set; }
+    
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+    
     public ICollection<ActiveSession> ActiveSessions { get; set; } = new List<ActiveSession>();
     
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();

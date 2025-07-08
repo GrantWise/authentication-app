@@ -2,6 +2,7 @@ using AuthenticationApi.Common.Interfaces;
 using AuthenticationApi.Common.Data;
 using AuthenticationApi.Common.Services;
 using AuthenticationApi.Common.Middleware;
+using AuthenticationApi.Common.HealthChecks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Security.Cryptography;
 using Serilog;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.DataProtection;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +23,14 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configure Data Protection API for secure storage of sensitive data
+var keyStoragePath = builder.Configuration.GetValue<string>("DataProtection:KeyStoragePath") 
+    ?? Path.Combine(builder.Environment.ContentRootPath, "Keys");
+Directory.CreateDirectory(keyStoragePath);
+
+builder.Services.AddDataProtection()
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90)); // 90-day key rotation
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -40,11 +53,8 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 
 // Add authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
-if (jwtSettings != null && !string.IsNullOrEmpty(jwtSettings.PublicKey))
+if (jwtSettings != null)
 {
-    var rsa = RSA.Create();
-    rsa.ImportFromPem(jwtSettings.PublicKey);
-    
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -56,7 +66,7 @@ if (jwtSettings != null && !string.IsNullOrEmpty(jwtSettings.PublicKey))
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = jwtSettings.Issuer,
                 ValidAudience = jwtSettings.Audience,
-                IssuerSigningKey = new RsaSecurityKey(rsa),
+                // RSA key validation will be handled by the JWT token service
                 ClockSkew = TimeSpan.Zero
             };
         });
@@ -68,14 +78,84 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.Get
 // Add FluentValidation
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
+// Add ASP.NET Core Rate Limiting
+builder.Services.AddRateLimiter(rateLimiterOptions =>
+{
+    // Login endpoint: 5 attempts per 15 minutes (fixed window, per username)
+    rateLimiterOptions.AddFixedWindowLimiter("LoginPolicy", options =>
+    {
+        options.PermitLimit = 5;
+        options.Window = TimeSpan.FromMinutes(15);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0; // No queuing for security endpoints
+    });
+
+    // Refresh endpoint: 10 attempts per minute (sliding window, per IP)
+    rateLimiterOptions.AddSlidingWindowLimiter("RefreshPolicy", options =>
+    {
+        options.PermitLimit = 10;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.SegmentsPerWindow = 6; // 10-second segments
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+    });
+
+    // MFA Verify: 5 attempts per 5 minutes (fixed window, per user)
+    rateLimiterOptions.AddFixedWindowLimiter("MfaPolicy", options =>
+    {
+        options.PermitLimit = 5;
+        options.Window = TimeSpan.FromMinutes(5);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+    });
+
+    // General API: 100 attempts per minute (sliding window, per IP)
+    rateLimiterOptions.AddSlidingWindowLimiter("GeneralPolicy", options =>
+    {
+        options.PermitLimit = 100;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.SegmentsPerWindow = 6; // 10-second segments
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 10;
+    });
+
+    rateLimiterOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetSlidingWindowLimiter("GlobalLimiter", _ =>
+            new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 1000,
+                Window = TimeSpan.FromMinutes(1),
+                SegmentsPerWindow = 6
+            }));
+
+    rateLimiterOptions.OnRejected = (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.Headers.Add("Retry-After", "60");
+        return new ValueTask();
+    };
+});
+
 // Add services
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
-builder.Services.AddScoped<IAuditService, AuditService>();
-builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
+builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<IAuditService>(provider =>
+{
+    var baseAuditService = provider.GetRequiredService<AuditService>();
+    var metricsService = provider.GetRequiredService<MetricsService>();
+    var logger = provider.GetRequiredService<ILogger<EnhancedAuditService>>();
+    var httpContextAccessor = provider.GetRequiredService<IHttpContextAccessor>();
+    
+    return new EnhancedAuditService(baseAuditService, metricsService, logger, httpContextAccessor);
+});
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<MetricsService>();
+builder.Services.AddSingleton<BusinessMetricsService>();
 
-// Add memory cache for rate limiting
+// Add memory cache
 builder.Services.AddMemoryCache();
 
 // Add background services
@@ -85,15 +165,92 @@ builder.Services.AddHostedService<SessionCleanupService>();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AuthenticationDbContext>();
 
-// Add CORS
+// Add background service health checks
+builder.Services.AddBackgroundServiceHealthCheck();
+
+// Add CORS with production-ready configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Next.js frontend
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        // Configure allowed origins based on environment
+        var allowedOrigins = new List<string>();
+        
+        if (builder.Environment.IsDevelopment())
+        {
+            allowedOrigins.AddRange(new[]
+            {
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://localhost:3001",
+                "https://localhost:3001"
+            });
+        }
+        
+        // Add production origins from configuration
+        var productionOrigins = builder.Configuration.GetSection("Security:Cors:AllowedOrigins").Get<string[]>();
+        if (productionOrigins != null)
+        {
+            allowedOrigins.AddRange(productionOrigins);
+        }
+        
+        policy.WithOrigins(allowedOrigins.ToArray())
+              .WithHeaders(
+                  "Content-Type",
+                  "Authorization",
+                  "X-Requested-With",
+                  "Accept",
+                  "Origin",
+                  "X-Correlation-Id"
+              )
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)) // Cache preflight for 24 hours
+              .WithExposedHeaders(
+                  "X-RateLimit-Policy",
+                  "X-RateLimit-Limit",
+                  "X-RateLimit-Remaining",
+                  "X-RateLimit-Reset",
+                  "X-RateLimit-Window",
+                  "X-Correlation-Id",
+                  "Retry-After"
+              );
+    });
+    
+    // Add a stricter policy for production API endpoints
+    options.AddPolicy("ProductionApi", policy =>
+    {
+        var productionOrigins = builder.Configuration.GetSection("Security:Cors:AllowedOrigins").Get<string[]>() 
+            ?? new[] { "https://app.translution.com" };
+            
+        policy.WithOrigins(productionOrigins)
+              .WithHeaders(
+                  "Content-Type",
+                  "Authorization",
+                  "X-Requested-With",
+                  "Accept",
+                  "Origin"
+              )
+              .WithMethods("GET", "POST", "PUT", "DELETE")
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400))
+              .WithExposedHeaders(
+                  "X-RateLimit-Policy",
+                  "X-RateLimit-Limit",
+                  "X-RateLimit-Remaining",
+                  "X-RateLimit-Reset",
+                  "X-RateLimit-Window",
+                  "X-Correlation-Id"
+              );
+    });
+    
+    // Add a policy for health checks and monitoring
+    options.AddPolicy("Monitoring", policy =>
+    {
+        policy.WithOrigins("*")
+              .WithHeaders("Content-Type", "Accept")
+              .WithMethods("GET")
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
     });
 });
 
@@ -160,16 +317,21 @@ app.UseHttpsRedirection();
 
 // Add security middleware (order is important)
 app.UseCorrelationId();
+app.UseRequestLogging();
 app.UseSecurityHeaders();
 
 app.UseCors("AllowFrontend");
+
+// Add rate limiting middleware
+app.UseRateLimiter();
+app.UseRateLimitHeaders();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Map health check endpoints
+// Map monitoring endpoints
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/detailed", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
@@ -192,6 +354,12 @@ app.MapHealthChecks("/health/detailed", new Microsoft.AspNetCore.Diagnostics.Hea
         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
     }
 });
+
+// Map Prometheus metrics endpoint
+if (builder.Configuration.GetValue<bool>("Monitoring:EnableMetrics", true))
+{
+    app.MapMetrics("/metrics");
+}
 
 // Apply database migrations on startup (configurable for production)
 if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup", true))

@@ -1,4 +1,6 @@
 using AuthenticationApi.Common.Interfaces;
+using AuthenticationApi.Common.HealthChecks;
+using System.Diagnostics;
 
 namespace AuthenticationApi.Common.Services;
 
@@ -11,9 +13,11 @@ public class SessionCleanupService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SessionCleanupService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly BackgroundServiceHealthCheck _healthCheck;
     private readonly bool _enabled;
     private readonly TimeSpan _interval;
     private readonly int _batchSize;
+    private const string ServiceName = "SessionCleanupService";
 
     /// <summary>
     /// Initializes a new instance of the SessionCleanupService class.
@@ -21,14 +25,17 @@ public class SessionCleanupService : BackgroundService
     /// <param name="serviceProvider">Service provider for creating scoped services</param>
     /// <param name="logger">Logger for service operations</param>
     /// <param name="configuration">Application configuration</param>
+    /// <param name="healthCheck">Background service health check</param>
     public SessionCleanupService(
         IServiceProvider serviceProvider,
         ILogger<SessionCleanupService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        BackgroundServiceHealthCheck healthCheck)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _configuration = configuration;
+        _healthCheck = healthCheck;
 
         // Load configuration with defaults from technical specification
         _enabled = _configuration.GetValue<bool>("SessionCleanup:Enabled", true);
@@ -38,6 +45,9 @@ public class SessionCleanupService : BackgroundService
 
         _logger.LogInformation("Session cleanup service configured: Enabled={Enabled}, Interval={Interval}, BatchSize={BatchSize}",
             _enabled, _interval, _batchSize);
+        
+        // Register with health check
+        _healthCheck.RegisterService(ServiceName);
     }
 
     /// <summary>
@@ -54,12 +64,20 @@ public class SessionCleanupService : BackgroundService
         }
 
         _logger.LogInformation("Session cleanup service started");
+        _healthCheck.RecordHeartbeat(ServiceName);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                _healthCheck.RecordHeartbeat(ServiceName);
+                var stopwatch = Stopwatch.StartNew();
+                
                 await PerformCleanupAsync(stoppingToken);
+                
+                stopwatch.Stop();
+                _healthCheck.RecordExecution(ServiceName, stopwatch.Elapsed);
+                
                 await Task.Delay(_interval, stoppingToken);
             }
             catch (OperationCanceledException)
@@ -71,6 +89,7 @@ public class SessionCleanupService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during session cleanup");
+                _healthCheck.RecordFailure(ServiceName, ex.Message);
                 
                 // Wait before retrying to avoid rapid failure loops
                 await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
@@ -78,6 +97,7 @@ public class SessionCleanupService : BackgroundService
         }
 
         _logger.LogInformation("Session cleanup service stopped");
+        _healthCheck.RecordStopped(ServiceName);
     }
 
     /// <summary>

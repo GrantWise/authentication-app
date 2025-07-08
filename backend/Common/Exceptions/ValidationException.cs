@@ -46,7 +46,7 @@ public class ValidationException : Exception
     /// <param name="field">The field name that failed validation</param>
     /// <param name="error">The validation error message</param>
     public ValidationException(string field, string error)
-        : base($"Validation failed for field '{field}': {error}")
+        : base(error)
     {
         Errors = new Dictionary<string, string[]>
         {

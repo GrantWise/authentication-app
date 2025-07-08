@@ -1,6 +1,7 @@
 using AuthenticationApi.Common.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AuthenticationApi.Features.Authentication.Refresh;
 
@@ -35,6 +36,7 @@ public class RefreshController : ControllerBase
     /// <response code="423">User account is locked</response>
     /// <response code="500">Internal server error</response>
     [HttpPost("refresh")]
+    [EnableRateLimiting("RefreshPolicy")]
     [ProducesResponseType(typeof(RefreshResponse), 200)]
     [ProducesResponseType(typeof(object), 400)]
     [ProducesResponseType(typeof(object), 404)]

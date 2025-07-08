@@ -43,7 +43,7 @@ public class RefreshHandler : IRequestHandler<RefreshRequest, RefreshResponse>
     public async Task<RefreshResponse> Handle(RefreshRequest request, CancellationToken cancellationToken)
     {
         // Validate the refresh token
-        if (!_jwtTokenService.ValidateToken(request.RefreshToken))
+        if (!await _jwtTokenService.ValidateToken(request.RefreshToken))
         {
             await _auditService.LogEventAsync("TOKEN_REFRESH_FAILED", 
                 ipAddress: request.IpAddress, 
@@ -102,8 +102,8 @@ public class RefreshHandler : IRequestHandler<RefreshRequest, RefreshResponse>
         }
 
         // Generate new tokens
-        var newAccessToken = _jwtTokenService.GenerateAccessToken(user);
-        var newRefreshToken = _jwtTokenService.GenerateRefreshToken(user);
+        var newAccessToken = await _jwtTokenService.GenerateAccessToken(user);
+        var newRefreshToken = await _jwtTokenService.GenerateRefreshToken(user);
         var newRefreshTokenJti = _jwtTokenService.GetJtiFromToken(newRefreshToken);
 
         // Update the session with new refresh token JTI (token rotation)

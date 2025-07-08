@@ -36,7 +36,7 @@ public class VerifyHandler : IRequestHandler<VerifyRequest, VerifyResponse>
         try
         {
             // Validate the token format and signature
-            if (!_jwtTokenService.ValidateToken(request.AccessToken))
+            if (!await _jwtTokenService.ValidateToken(request.AccessToken))
             {
                 return new VerifyResponse
                 {

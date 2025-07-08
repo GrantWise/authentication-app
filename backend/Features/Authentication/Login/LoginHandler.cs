@@ -11,37 +11,23 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
     private readonly IJwtTokenService _jwtTokenService;
     private readonly ISessionService _sessionService;
     private readonly IAuditService _auditService;
-    private readonly IRateLimitingService _rateLimitingService;
     
     public LoginHandler(
         IUserService userService,
         IJwtTokenService jwtTokenService,
         ISessionService sessionService,
-        IAuditService auditService,
-        IRateLimitingService rateLimitingService)
+        IAuditService auditService)
     {
         _userService = userService;
         _jwtTokenService = jwtTokenService;
         _sessionService = sessionService;
         _auditService = auditService;
-        _rateLimitingService = rateLimitingService;
     }
     
     public async Task<LoginResponse> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
-        // Check rate limiting first
-        if (!await _rateLimitingService.IsLoginAttemptAllowedAsync(request.Username, request.IpAddress))
-        {
-            await _auditService.LogEventAsync("LOGIN_RATE_LIMITED", 
-                username: request.Username, 
-                ipAddress: request.IpAddress, 
-                details: "Rate limit exceeded");
-            
-            var remainingAttempts = await _rateLimitingService.GetRemainingAttemptsAsync(request.Username);
-            throw new BusinessRuleException("RATE_LIMIT_EXCEEDED", 
-                $"Too many login attempts. Please wait 15 minutes before trying again. Remaining attempts: {remainingAttempts}");
-        }
-
+        // Rate limiting is now handled by ASP.NET Core middleware
+        
         // Get user by username
         var user = await _userService.GetUserByUsernameAsync(request.Username);
         
@@ -51,9 +37,6 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
                 username: request.Username, 
                 ipAddress: request.IpAddress, 
                 details: "User not found");
-
-            // Record failed attempt for rate limiting
-            await _rateLimitingService.RecordLoginAttemptAsync(request.Username, request.IpAddress, false);
             
             throw new ValidationException("Username", "Invalid username or password");
         }
@@ -66,9 +49,6 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
                 request.Username, 
                 request.IpAddress, 
                 details: "Account locked");
-
-            // Record failed attempt for rate limiting
-            await _rateLimitingService.RecordLoginAttemptAsync(request.Username, request.IpAddress, false);
             
             throw new AccountLockedException(user.LockoutEnd ?? DateTime.UtcNow.AddMinutes(30));
         }
@@ -95,9 +75,6 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
                     details: "Account locked due to failed login attempts");
             }
             
-            // Record failed attempt for rate limiting
-            await _rateLimitingService.RecordLoginAttemptAsync(request.Username, request.IpAddress, false);
-            
             throw new ValidationException("Password", "Invalid username or password");
         }
         
@@ -121,8 +98,8 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
         }
         
         // Generate tokens
-        var accessToken = _jwtTokenService.GenerateAccessToken(user);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken(user);
+        var accessToken = await _jwtTokenService.GenerateAccessToken(user);
+        var refreshToken = await _jwtTokenService.GenerateRefreshToken(user);
         var refreshTokenJti = _jwtTokenService.GetJtiFromToken(refreshToken);
         
         // Create session
@@ -132,9 +109,6 @@ public class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
             user.UserId, 
             request.Username, 
             request.IpAddress);
-
-        // Record successful attempt for rate limiting
-        await _rateLimitingService.RecordLoginAttemptAsync(request.Username, request.IpAddress, true);
         
         return new LoginResponse
         {
